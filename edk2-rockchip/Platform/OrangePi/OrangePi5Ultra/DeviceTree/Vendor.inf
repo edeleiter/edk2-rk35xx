@@ -1,0 +1,18 @@
+#/** @file
+#
+#  Copyright (c) 2024, Mario Bălănică <mariobalanica02@gmail.com>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = DeviceTree-Vendor
+  FILE_GUID                      = b399997f-41f6-4441-af14-5c9a4beec725
+  MODULE_TYPE                    = USER_DEFINED
+  VERSION_STRING                 = 1.0
+
+[Binaries]
+  # No vendor DTB for Ultra yet; Max is close enough (shared compact.dtsi base).
+  BIN|devicetree/vendor/rk3588-orangepi-5-max.dtb

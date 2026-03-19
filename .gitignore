@@ -10,3 +10,6 @@ ramdisk
 *.rej
 *.orig
 *_FLASH.img
+
+# mine
+.log

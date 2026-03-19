@@ -15,6 +15,7 @@ function _help(){
     echo "  -D, --distclean             Clean up all files that are not in repo."
     echo "  --tfa-flags \"FLAGS\"         Flags appended to open TF-A build process."
     echo "  --edk2-flags \"FLAGS\"        Flags appended to the EDK2 build process."
+    echo "  -N, --native-build          Rsync tree to native ext4 for faster builds (WSL2)."
     echo "  -h, --help                  Show this help."
     echo
     exit "${1}"
@@ -88,11 +89,11 @@ function _pack_image() {
     cp ${WORKSPACE}/Build/${PLATFORM_NAME}/${RELEASE_TYPE}_${TOOLCHAIN}/FV/NOR_FLASH_IMAGE.fd ${WORKSPACE}/RK3588_NOR_FLASH.img
 
     # GPT at 0x0, size:0x4400
-    dd if=${ROOTDIR}/misc/rk3588_spi_nor_gpt.img of=${WORKSPACE}/RK3588_NOR_FLASH.img
+    dd if=${ROOTDIR}/misc/rk3588_spi_nor_gpt.img of=${WORKSPACE}/RK3588_NOR_FLASH.img conv=notrunc
     # idblock at 0x8000
-    dd if=${WORKSPACE}/idblock.bin of=${WORKSPACE}/RK3588_NOR_FLASH.img bs=1K seek=32
+    dd if=${WORKSPACE}/idblock.bin of=${WORKSPACE}/RK3588_NOR_FLASH.img bs=1K seek=32 conv=notrunc
     # FIT Image at 0x100000
-    dd if=${WORKSPACE}/${DEVICE}_EFI.itb of=${WORKSPACE}/RK3588_NOR_FLASH.img bs=1K seek=1024
+    dd if=${WORKSPACE}/${DEVICE}_EFI.itb of=${WORKSPACE}/RK3588_NOR_FLASH.img bs=1K seek=1024 conv=notrunc
     cp ${WORKSPACE}/RK3588_NOR_FLASH.img ${ROOTDIR}/
 }
 
@@ -181,12 +182,13 @@ TFA_FLAGS=""
 EDK2_FLAGS=""
 CLEAN=false
 DISTCLEAN=false
+NATIVE_BUILD=false
 OUTDIR="${PWD}"
 
 #
 # Get options
 #
-OPTS=$(getopt -o "d:r:t:CDh" -l "device:,release:,toolchain:,open-tfa:,tfa-flags:,edk2-flags:,clean,distclean,help" -n build.sh -- "${@}") || _help $?
+OPTS=$(getopt -o "d:r:t:NCDh" -l "device:,release:,toolchain:,native-build,open-tfa:,tfa-flags:,edk2-flags:,clean,distclean,help" -n build.sh -- "${@}") || _help $?
 eval set -- "${OPTS}"
 while true; do
     case "${1}" in
@@ -196,6 +198,7 @@ while true; do
         --open-tfa) OPEN_TFA="${2}"; shift 2 ;;
         --tfa-flags) TFA_FLAGS="${2}"; shift 2 ;;
         --edk2-flags) EDK2_FLAGS="${2}"; shift 2 ;;
+        -N|--native-build) NATIVE_BUILD=true; shift ;;
         -C|--clean) CLEAN=true; shift ;;
         -D|--distclean) DISTCLEAN=true; shift ;;
         -h|--help) _help 0; shift ;;
@@ -236,6 +239,21 @@ export WORKSPACE="${OUTDIR}/workspace"
 [ -d "${WORKSPACE}" ] || mkdir "${WORKSPACE}"
 
 ROOTDIR="$(realpath "$(dirname "$0")")"
+
+if "${NATIVE_BUILD}"; then
+    NATIVE_DIR="/tmp/edk2-rk35xx-build"
+    echo " => Syncing source tree to native filesystem (${NATIVE_DIR})..."
+    mkdir -p "${NATIVE_DIR}"
+    rsync -a --delete \
+        --exclude='workspace/' \
+        --exclude='RK3588_NOR_FLASH.img' \
+        "${ROOTDIR}/" "${NATIVE_DIR}/"
+    echo " => Sync complete, building on ext4"
+    ROOTDIR="${NATIVE_DIR}"
+    export WORKSPACE="${NATIVE_DIR}/workspace"
+    [ -d "${WORKSPACE}" ] || mkdir "${WORKSPACE}"
+fi
+
 cd "${ROOTDIR}" || exit 1
 
 # Exit on first error
@@ -253,4 +271,9 @@ then
     done
 else
     _build "${DEVICE}"
+fi
+
+if "${NATIVE_BUILD}"; then
+    echo " => Copying artifacts back to ${OUTDIR}"
+    cp "${NATIVE_DIR}/RK3588_NOR_FLASH.img" "${OUTDIR}/" 2>/dev/null || true
 fi

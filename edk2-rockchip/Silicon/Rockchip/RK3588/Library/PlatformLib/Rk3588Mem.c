@@ -73,7 +73,7 @@ ArmPlatformGetVirtualMemoryMap (
   VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
   VirtualMemoryTable[Index].Length       = 0x200000;
   VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED;
-  VirtualMemoryInfo[Index].Type          = RK3588_MEM_UNMAPPED_REGION;
+  VirtualMemoryInfo[Index].Type          = RK3588_MEM_RESERVED_REGION;
   VirtualMemoryInfo[Index++].Name        = L"TF-A + Shared Memory";
 
   // Firmware Volume
