@@ -300,15 +300,39 @@ AcpiFixupPcieEcam (
       break;
   }
 
-  for (Index = 0; Index < ARRAY_SIZE (McfgTable->MainEntries); Index++) {
-    if (McfgSingleDevQuirk) {
-      if ((PcdGet32 (PcdPcieEcamCompliantSegmentsMask) & (1 << Index)) == 0) {
-        McfgTable->MainEntries[Index].BaseAddress += 0x8000;
-      }
-    }
+  //
+  // Zero out MCFG entries for disabled PCIe segments.
+  // Without iATU configuration, accessing a disabled segment's ECAM region
+  // causes a synchronous external abort.
+  //
+  {
+    BOOLEAN  SegmentEnabled[NUM_PCIE_CONTROLLER] = {
+      [0] = PcdGet32 (PcdPcie30State) == PCIE30_STATE_ENABLED,
+      [1] = PcdGet32 (PcdPcie30State) == PCIE30_STATE_ENABLED &&
+            FixedPcdGetBool (PcdPcie30x2Supported) &&
+            PcdGet8 (PcdPcie30PhyMode) != PCIE30_PHY_MODE_AGGREGATION,
+      [2] = PcdGet32 (PcdComboPhy1Mode) == COMBO_PHY_MODE_PCIE,
+      [3] = PcdGet32 (PcdComboPhy2Mode) == COMBO_PHY_MODE_PCIE,
+      [4] = PcdGet32 (PcdComboPhy0Mode) == COMBO_PHY_MODE_PCIE,
+    };
 
-    McfgTable->MainEntries[Index].StartBusNumber = McfgMainBusMin;
-    McfgTable->MainEntries[Index].EndBusNumber   = PcieBusMax;
+    for (Index = 0; Index < ARRAY_SIZE (McfgTable->MainEntries); Index++) {
+      if (!SegmentEnabled[Index]) {
+        DEBUG ((DEBUG_INFO, "AcpiPlatform: Zeroing MCFG entry for disabled PCIe segment %u\n", Index));
+        ZeroMem (&McfgTable->MainEntries[Index], sizeof (McfgTable->MainEntries[Index]));
+        ZeroMem (&McfgTable->RootPortEntries[Index], sizeof (McfgTable->RootPortEntries[Index]));
+        continue;
+      }
+
+      if (McfgSingleDevQuirk) {
+        if ((PcdGet32 (PcdPcieEcamCompliantSegmentsMask) & (1 << Index)) == 0) {
+          McfgTable->MainEntries[Index].BaseAddress += 0x8000;
+        }
+      }
+
+      McfgTable->MainEntries[Index].StartBusNumber = McfgMainBusMin;
+      McfgTable->MainEntries[Index].EndBusNumber   = PcieBusMax;
+    }
   }
 
   if (McfgSplitRootPort == FALSE) {
