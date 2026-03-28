@@ -18,6 +18,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
+#include <Library/IoLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
@@ -359,6 +360,12 @@ AcpiPlatformExitBootServicesOsHandler (
   if ((mAcpiSdtProtocol == NULL) || (mDsdtTable == NULL)) {
     return;
   }
+
+  //
+  // Debug: dump WDT control registers to check if any watchdog is armed
+  //
+  DEBUG ((DEBUG_ERROR, "WDT: PMUWDT_CR=0x%08x WDT_NS_CR=0x%08x\n",
+          MmioRead32 (0xFD8E0000), MmioRead32 (0xFEAF0000)));
 
   //
   // Hide EHCI PNP ID for Windows to avoid binding to the inbox driver,
