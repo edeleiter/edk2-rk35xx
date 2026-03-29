@@ -85,6 +85,13 @@
   gRK3588TokenSpaceGuid.PcdComboPhy2ModeDefault|$(COMBO_PHY_MODE_UNCONNECTED)
 
   #
+  # DWC3 controllers — exclude USB3 Host2 (0xFCD00000) which is tied to
+  # ComboPhy2 (UNCONNECTED on Ultra). Accessing it at ExitBootServices
+  # causes a bus fault during XhcClearBiosOwnership.
+  #
+  gRockchipTokenSpaceGuid.PcdDwc3BaseAddresses|{ UINT32(0xFC000000), UINT32(0xFC400000) }
+
+  #
   # USB/DP Combo PHY support flags and default values
   #
   gRK3588TokenSpaceGuid.PcdUsbDpPhy0Supported|TRUE
