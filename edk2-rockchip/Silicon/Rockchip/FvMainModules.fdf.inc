@@ -219,8 +219,9 @@
 
   #
   # EFI Memory Attribute Protocol state manager (rhboot shim workaround)
+  # Disabled: causes hard reset during Windows bootmgr page table splitting.
   #
-  INF EmbeddedPkg/Drivers/MemoryAttributeManagerDxe/MemoryAttributeManagerDxe.inf
+  # INF EmbeddedPkg/Drivers/MemoryAttributeManagerDxe/MemoryAttributeManagerDxe.inf
 
   #
   # Bds

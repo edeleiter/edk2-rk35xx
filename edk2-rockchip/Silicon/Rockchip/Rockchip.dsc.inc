@@ -779,8 +779,10 @@ FspiLib|Silicon/Rockchip/Library/FspiLib/FspiLib.inf
 
   #
   # EFI Memory Attribute Protocol state manager (rhboot shim workaround)
+  # Disabled: causes hard reset on RK3588 when bootmgr triggers block entry
+  # splitting in ArmMmuLib with MMU disabled at EL2 (VA != PA after split).
   #
-  EmbeddedPkg/Drivers/MemoryAttributeManagerDxe/MemoryAttributeManagerDxe.inf
+  # EmbeddedPkg/Drivers/MemoryAttributeManagerDxe/MemoryAttributeManagerDxe.inf
 
   #
   # Bds
